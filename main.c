@@ -27,25 +27,43 @@ void print_block(unsigned char *block) {
   printf("\n");
 }
 
-int main() {
 
+
+int main() {
+  // test case for all_round_key
   unsigned char block[BLOCK_SIZE]     = {0x00, 0x01, 0x02, 0x03,
     0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b,
     0x0c, 0x0d, 0x0e, 0x0f};
 
-unsigned char round_key[BLOCK_SIZE] = {0x0f, 0x0e, 0x0d, 0x0c,
+  unsigned char round_key[BLOCK_SIZE] = {0x0f, 0x0e, 0x0d, 0x0c,
     0x0b, 0x0a, 0x09, 0x08,
     0x07, 0x06, 0x05, 0x04,
     0x03, 0x02, 0x01, 0x00};
 
-printf("Before add_round_key:\n");
-print_block(block);
+  printf("Before add_round_key:\n");
+  print_block(block);
 
-add_round_key(block, round_key);
+  add_round_key(block, round_key);
 
-printf("After add_round_key:\n");
-print_block(block);
+  printf("After add_round_key:\n");
+  print_block(block);
+
+    // Shift Rows Test
+    unsigned char shift_test[16] = {
+      0x00, 0x01, 0x02, 0x03,
+      0x10, 0x11, 0x12, 0x13,
+      0x20, 0x21, 0x22, 0x23,
+      0x30, 0x31, 0x32, 0x33
+  };
+
+  printf("\nBefore shift_rows:\n");
+  print_block(shift_test);
+
+  shift_rows(shift_test);
+
+  printf("After shift_rows:\n");
+  print_block(shift_test);
 
   unsigned char plaintext[16] = {1, 2,  3,  4,  5,  6,  7,  8,
                                  9, 10, 11, 12, 13, 14, 15, 16};
