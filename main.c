@@ -65,6 +65,22 @@ int main() {
   printf("After shift_rows:\n");
   print_block(shift_test);
 
+  // sub_byte test case
+  unsigned char sub_test[BLOCK_SIZE] = {
+    0x00, 0x11, 0x22, 0x33,
+    0x44, 0x55, 0x66, 0x77,
+    0x88, 0x99, 0xaa, 0xbb,
+    0xcc, 0xdd, 0xee, 0xff
+  };
+  
+  printf("\nBefore sub_bytes:\n");
+  print_block(sub_test);
+  
+  sub_bytes(sub_test);
+  
+  printf("After sub_bytes:\n");
+  print_block(sub_test);
+
   unsigned char plaintext[16] = {1, 2,  3,  4,  5,  6,  7,  8,
                                  9, 10, 11, 12, 13, 14, 15, 16};
   unsigned char key[16] = {50, 20, 46, 86, 67, 9, 70, 27,
