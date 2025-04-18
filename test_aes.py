@@ -34,8 +34,8 @@ def print_hex(label, data):
         print(f"{b:02x}", end=" ")
     print("\n")
 
-# -------------------------
-# Test 1 (Fixed test)
+
+# Test 1 
 plaintext = bytes([
     1, 2, 3, 4,
     5, 6, 7, 8,
@@ -64,5 +64,21 @@ print_hex("", recovered_plaintext)
 
 assert plaintext == recovered_plaintext, "Test 1 failed: Recovered plaintext does not match original!"
 print("\033[1;32mTest 1 passed!\033[0m")
+
+
+# Test 2 (Random)
+plaintext2 = os.urandom(16)
+key2 = os.urandom(16)
+
+ciphertext2 = encrypt_block(plaintext2, key2)
+recovered_plaintext2 = decrypt_block(ciphertext2, key2)
+
+print("\n\033[1;32mTest 2 (Random Data)\033[0m")
+print_hex("Plaintext", plaintext2)
+print_hex("Ciphertext", ciphertext2)
+print_hex("Recovered", recovered_plaintext2)
+
+assert plaintext2 == recovered_plaintext2, "Test 2 failed: Recovered plaintext does not match!"
+print("\033[1;32mTest 2 passed!\033[0m")
 
 
