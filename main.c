@@ -1,16 +1,22 @@
-// main.c
-
 #include <stdio.h>
 #include <stdlib.h>
 #include "rijndael.h"
 
-void print_128bit_block(unsigned char *block) {
+void print_128bit_block(unsigned char *block, const char *label) {
+    printf("\n%s\n", label);
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
             printf("%3d ", block[i * 4 + j]);
         }
         printf("\n");
     }
+}
+
+void print_hex_block(unsigned char *block) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        printf("%02x ", block[i]);
+    }
+    printf("\n");
 }
 
 int main() {
@@ -29,19 +35,18 @@ int main() {
     };
 
     unsigned char *ciphertext = aes_encrypt_block(plaintext, key);
-    unsigned char *recovered_plaintext = aes_decrypt_block(ciphertext, key);
+    unsigned char *recovered = aes_decrypt_block(ciphertext, key);
 
-    printf("\nOriginal Plaintext:\n");
-    print_128bit_block(plaintext);
+    print_128bit_block(plaintext, "\033[1;32mOriginal Plaintext:\033[0m");
+    printf("\nHex view: "); print_hex_block(plaintext);
 
-    printf("\nCiphertext (Encrypted):\n");
-    print_128bit_block(ciphertext);
+    print_128bit_block(ciphertext, "\033[1;34mCiphertext (Encrypted):\033[0m");
+    printf("\nHex view: "); print_hex_block(ciphertext);
 
-    printf("\nRecovered Plaintext:\n");
-    print_128bit_block(recovered_plaintext);
+    print_128bit_block(recovered, "\033[1;33mRecovered Plaintext:\033[0m");
+    printf("\nHex view: "); print_hex_block(recovered);
 
     free(ciphertext);
-    free(recovered_plaintext);
-
+    free(recovered);
     return 0;
 }
