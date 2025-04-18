@@ -198,9 +198,40 @@ unsigned char *expand_key(unsigned char *cipher_key) {
  */
 unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
   // TODO: Implement me!
-  unsigned char *output =
-      (unsigned char *)malloc(sizeof(unsigned char) * BLOCK_SIZE);
-  return output;
+  unsigned char *block = (unsigned char *)malloc(BLOCK_SIZE);
+    if (!block) return NULL;
+
+    // Copy plaintext into block
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] = plaintext[i];
+    }
+
+    // Expand the key
+    unsigned char *round_keys = expand_key(key);
+    if (!round_keys) {
+        free(block);
+        return NULL;
+    }
+
+    // Initial round
+    add_round_key(block, round_keys);
+
+    // Rounds 1 to 9
+    for (int round = 1; round <= 9; round++) {
+        sub_bytes(block);
+        shift_rows(block);
+        mix_columns(block);
+        add_round_key(block, round_keys + (round * BLOCK_SIZE));
+    }
+
+    // Round 10 (no mix_columns)
+    sub_bytes(block);
+    shift_rows(block);
+    add_round_key(block, round_keys + (10 * BLOCK_SIZE));
+
+    free(round_keys);
+
+    return block;
 }
 
 unsigned char *aes_decrypt_block(unsigned char *ciphertext,
