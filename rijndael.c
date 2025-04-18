@@ -6,9 +6,10 @@
 #include <stdlib.h>
 // TODO: Any other files you need to include should go here
 
+
 #include "rijndael.h"
 
-static const unsigned char sbox[256] = {
+const unsigned char s_box[256] = {
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
   0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
   0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0,
@@ -43,13 +44,15 @@ static const unsigned char sbox[256] = {
   0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
+
+
 /*
  * Operations used when encrypting a block
  */
 void sub_bytes(unsigned char *block) {
   // TODO: Implement me!
   for (int i = 0; i < BLOCK_SIZE; i++) {
-    block[i] = sbox[block[i]];
+    block[i] = s_box[block[i]];
   }
 }
 
@@ -142,7 +145,51 @@ void add_round_key(unsigned char *block, unsigned char *round_key) {
  */
 unsigned char *expand_key(unsigned char *cipher_key) {
   // TODO: Implement me!
-  return 0;
+  
+  unsigned char *expanded = (unsigned char *)malloc(176);
+  if (!expanded) return NULL; // check malloc worked
+
+  // Copy the original cipher key (first 16 bytes)
+  for (int i = 0; i < 16; i++) {
+      expanded[i] = cipher_key[i];
+  }
+
+  int bytes_generated = 16;
+  int rcon_iteration = 1;
+  unsigned char temp[4];
+
+  while (bytes_generated < 176) {
+      // Copy the last 4 bytes into temp
+      for (int i = 0; i < 4; i++) {
+          temp[i] = expanded[bytes_generated - 4 + i];
+      }
+
+      if (bytes_generated % 16 == 0) {
+          // Rotate left
+          unsigned char k = temp[0];
+          temp[0] = temp[1];
+          temp[1] = temp[2];
+          temp[2] = temp[3];
+          temp[3] = k;
+
+          // Substitute bytes
+          for (int i = 0; i < 4; i++) {
+              temp[i] = s_box[temp[i]];
+          }
+
+          // Rcon
+          temp[0] ^= (1 << (rcon_iteration - 1));
+          rcon_iteration++;
+      }
+
+      // XOR temp with [bytes_generated - 16] and store
+      for (int i = 0; i < 4; i++) {
+          expanded[bytes_generated] = expanded[bytes_generated - 16] ^ temp[i];
+          bytes_generated++;
+      }
+  }
+
+  return expanded;
 }
 
 /*
