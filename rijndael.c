@@ -79,6 +79,14 @@ const unsigned char inv_s_box[256] = {
   0xE1,0x69,0x14,0x63,0x55,0x21,0x0C,0x7D
 };
 
+static const unsigned char rcon[11] = {
+  0x00, // Dummy, not used
+  0x01, 0x02, 0x04, 0x08,
+  0x10, 0x20, 0x40, 0x80,
+  0x1B, 0x36
+};
+
+
 
 
 /*
@@ -184,31 +192,39 @@ void invert_shift_rows(unsigned char *block) {
     block[11] = block[15];
     block[15] = temp;
 
-  // Row 1 (indices: 1, 5, 9, 13) — shift right by 1
-  temp = block[13];
-  block[13] = block[9];
-  block[9] = block[5];
-  block[5] = block[1];
-  block[1] = temp;
-
-  // Row 2 (indices: 2, 6, 10, 14) — shift right by 2
-  temp = block[2];
-  block[2] = block[10];
-  block[10] = temp;
-  temp = block[6];
-  block[6] = block[14];
-  block[14] = temp;
-
-  // Row 3 (indices: 3, 7, 11, 15) — shift right by 3
-  temp = block[3];
-  block[3] = block[7];
-  block[7] = block[11];
-  block[11] = block[15];
-  block[15] = temp;
 }
 
 void invert_mix_columns(unsigned char *block) {
   // TODO: Implement me!
+
+  for (int i = 0; i < 4; i++) {
+    int col = i * 4;
+
+    unsigned char a = block[col];
+    unsigned char b = block[col + 1];
+    unsigned char c = block[col + 2];
+    unsigned char d = block[col + 3];
+
+    unsigned char a2 = xtime(a);
+    unsigned char b2 = xtime(b);
+    unsigned char c2 = xtime(c);
+    unsigned char d2 = xtime(d);
+
+    unsigned char a4 = xtime(a2);
+    unsigned char b4 = xtime(b2);
+    unsigned char c4 = xtime(c2);
+    unsigned char d4 = xtime(d2);
+
+    unsigned char a8 = xtime(a4);
+    unsigned char b8 = xtime(b4);
+    unsigned char c8 = xtime(c4);
+    unsigned char d8 = xtime(d4);
+
+    block[col] = (a8 ^ a4 ^ a2) ^ (b8 ^ b2) ^ (c8 ^ c4) ^ (d4 ^ d2 ^ d);
+    block[col + 1] = (a4 ^ a2 ^ a) ^ (b8 ^ b4 ^ b2) ^ (c8 ^ c2) ^ (d8 ^ d);
+    block[col + 2] = (a8 ^ a2) ^ (b4 ^ b2 ^ b) ^ (c8 ^ c4 ^ c2) ^ (d8 ^ d4);
+    block[col + 3] = (a8 ^ a4 ^ a) ^ (b8 ^ b2) ^ (c4 ^ c2 ^ c) ^ (d8 ^ d4 ^ d2);
+  }
 }
 
 /*
@@ -230,49 +246,44 @@ unsigned char *expand_key(unsigned char *cipher_key) {
   // TODO: Implement me!
   
   unsigned char *expanded = (unsigned char *)malloc(176);
-  if (!expanded) return NULL; // check malloc worked
+    if (!expanded) return NULL;
 
-  // Copy the original cipher key (first 16 bytes)
-  for (int i = 0; i < 16; i++) {
-      expanded[i] = cipher_key[i];
-  }
+    for (int i = 0; i < 16; i++) {
+        expanded[i] = cipher_key[i];
+    }
 
-  int bytes_generated = 16;
-  int rcon_iteration = 1;
-  unsigned char temp[4];
+    int bytes_generated = 16;
+    unsigned char temp[4];
 
-  while (bytes_generated < 176) {
-      // Copy the last 4 bytes into temp
-      for (int i = 0; i < 4; i++) {
-          temp[i] = expanded[bytes_generated - 4 + i];
-      }
+    while (bytes_generated < 176) {
+        for (int i = 0; i < 4; i++) {
+            temp[i] = expanded[bytes_generated - 4 + i];
+        }
 
-      if (bytes_generated % 16 == 0) {
-          // Rotate left
-          unsigned char k = temp[0];
-          temp[0] = temp[1];
-          temp[1] = temp[2];
-          temp[2] = temp[3];
-          temp[3] = k;
+        if (bytes_generated % 16 == 0) {
+            // Rotate
+            unsigned char k = temp[0];
+            temp[0] = temp[1];
+            temp[1] = temp[2];
+            temp[2] = temp[3];
+            temp[3] = k;
 
-          // Substitute bytes
-          for (int i = 0; i < 4; i++) {
-              temp[i] = s_box[temp[i]];
-          }
+            // Substitute
+            for (int i = 0; i < 4; i++) {
+                temp[i] = s_box[temp[i]];
+            }
 
-          // Rcon
-          temp[0] ^= (1 << (rcon_iteration - 1));
-          rcon_iteration++;
-      }
+            // Apply Rcon
+            temp[0] ^= rcon[bytes_generated / 16];
+        }
 
-      // XOR temp with [bytes_generated - 16] and store
-      for (int i = 0; i < 4; i++) {
-          expanded[bytes_generated] = expanded[bytes_generated - 16] ^ temp[i];
-          bytes_generated++;
-      }
-  }
+        for (int i = 0; i < 4; i++) {
+            expanded[bytes_generated] = expanded[bytes_generated - 16] ^ temp[i];
+            bytes_generated++;
+        }
+    }
 
-  return expanded;
+    return expanded;
 }
 
 /*

@@ -98,24 +98,6 @@ int main() {
   print_block(mix_test);
 
 
-  // test case for expand_key
-  unsigned char test_key[16] = {
-    0x2b, 0x7e, 0x15, 0x16,
-    0x28, 0xae, 0xd2, 0xa6,
-    0xab, 0xf7, 0x15, 0x88,
-    0x09, 0xcf, 0x4f, 0x3c
-  };
-
-  unsigned char *round_keys = expand_key(test_key);
-
-  printf("\nExpanded Keys:\n");
-  for (int i = 0; i < 176; i++) {
-      printf("%02x ", round_keys[i]);
-      if ((i + 1) % 16 == 0) printf("\n");
-  }
-
-  free(round_keys);
-
 
   unsigned char plaintext[16] = {1, 2,  3,  4,  5,  6,  7,  8,
                                  9, 10, 11, 12, 13, 14, 15, 16};
