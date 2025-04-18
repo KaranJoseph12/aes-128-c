@@ -237,7 +237,37 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
 unsigned char *aes_decrypt_block(unsigned char *ciphertext,
                                  unsigned char *key) {
   // TODO: Implement me!
-  unsigned char *output =
-      (unsigned char *)malloc(sizeof(unsigned char) * BLOCK_SIZE);
-  return output;
+  unsigned char *block = (unsigned char *)malloc(BLOCK_SIZE);
+  if (!block) return NULL;
+
+  // Copy ciphertext into block
+  for (int i = 0; i < BLOCK_SIZE; i++) {
+      block[i] = ciphertext[i];
+  }
+
+  // Expand the key
+  unsigned char *round_keys = expand_key(key);
+  if (!round_keys) {
+      free(block);
+      return NULL;
+  }
+
+  // Initial round (reverse of encryption's final add_round_key)
+  add_round_key(block, round_keys + (10 * BLOCK_SIZE));
+  invert_shift_rows(block);
+  invert_sub_bytes(block);
+
+  // Rounds 9 to 1 (reverse order)
+  for (int round = 9; round >= 1; round--) {
+      add_round_key(block, round_keys + (round * BLOCK_SIZE));
+      invert_mix_columns(block);
+      invert_shift_rows(block);
+      invert_sub_bytes(block);
+  }
+
+  // Final round
+  add_round_key(block, round_keys);
+
+  free(round_keys);
+  return block;
 }
