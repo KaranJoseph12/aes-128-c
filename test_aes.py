@@ -82,3 +82,20 @@ assert plaintext2 == recovered_plaintext2, "Test 2 failed: Recovered plaintext d
 print("\033[1;32mTest 2 passed!\033[0m")
 
 
+# Test 3 (Random)
+plaintext3 = os.urandom(16)
+key3 = os.urandom(16)
+
+ciphertext3 = encrypt_block(plaintext3, key3)
+recovered_plaintext3 = decrypt_block(ciphertext3, key3)
+
+print("\n\033[1;32mTest 3 (Random Data)\033[0m")
+print_hex("Plaintext", plaintext3)
+print_hex("Ciphertext", ciphertext3)
+print_hex("Recovered", recovered_plaintext3)
+
+assert plaintext3 == recovered_plaintext3, "Test 3 failed: Recovered plaintext does not match!"
+print("\033[1;32mTest 3 passed!\033[0m")
+
+
+print("\n\033[1;32mAll tests passed successfully!\033[0m")
