@@ -3,12 +3,12 @@
  *       a brief description of this code.
  */
 
+
+
 #include <stdlib.h>
-// TODO: Any other files you need to include should go here
-
-
 #include "rijndael.h"
 
+// AES S-box
 const unsigned char s_box[256] = {
   0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
   0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -44,6 +44,7 @@ const unsigned char s_box[256] = {
   0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
+// AES Inverse S-box
 const unsigned char inv_s_box[256] = {
   0x52,0x09,0x6A,0xD5,0x30,0x36,0xA5,0x38,
   0xBF,0x40,0xA3,0x9E,0x81,0xF3,0xD7,0xFB,
@@ -79,105 +80,45 @@ const unsigned char inv_s_box[256] = {
   0xE1,0x69,0x14,0x63,0x55,0x21,0x0C,0x7D
 };
 
+// AES Rcon array
 static const unsigned char rcon[11] = {
-  0x00, // Dummy, not used
-  0x01, 0x02, 0x04, 0x08,
-  0x10, 0x20, 0x40, 0x80,
-  0x1B, 0x36
+  0x00, 0x01, 0x02, 0x04, 0x08,
+  0x10, 0x20, 0x40, 0x80, 0x1B, 0x36
 };
 
+// Multiply by x in GF(2^8)
+static unsigned char xtime(unsigned char x) {
+    return (x << 1) ^ ((x & 0x80) ? 0x1b : 0x00);
+}
 
+// Multiply two numbers in GF(2^8)
+static unsigned char multiply(unsigned char a, unsigned char b) {
+    unsigned char result = 0;
+    while (b) {
+        if (b & 1) result ^= a;
+        a = xtime(a);
+        b >>= 1;
+    }
+    return result;
+}
 
-
-/*
- * Operations used when encrypting a block
- */
 void sub_bytes(unsigned char *block) {
-  // TODO: Implement me!
-  for (int i = 0; i < BLOCK_SIZE; i++) {
-    block[i] = s_box[block[i]];
-  }
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] = s_box[block[i]];
+    }
 }
 
 void shift_rows(unsigned char *block) {
-  // TODO: Implement me!
-  unsigned char temp;
+    unsigned char temp;
 
-    // Row 1 (indices: 1,5,9,13) — shift left by 1
+    // Row 1: shift left by 1
     temp = block[1];
-    block[1]  = block[5];
-    block[5]  = block[9];
-    block[9]  = block[13];
+    block[1] = block[5];
+    block[5] = block[9];
+    block[9] = block[13];
     block[13] = temp;
 
-    // Row 2 (indices: 2,6,10,14) — shift left by 2
-    temp = block[2];
-    block[2]  = block[10];
-    block[10] = temp;
-    temp = block[6];
-    block[6]  = block[14];
-    block[14] = temp;
-
-    // Row 3 (indices: 3,7,11,15) — shift left by 3
-    temp = block[15];
-    block[15] = block[11];
-    block[11] = block[7];
-    block[7]  = block[3];
-    block[3]  = temp;
-
-}
-
-static unsigned char xtime(unsigned char x) {
-  return (x << 1) ^ (((x >> 7) & 1) * 0x1b);
-}
-
-
-void mix_columns(unsigned char *block) {
-  // TODO: Implement me!
-  for (int i = 0; i < 4; i++) {
-    int col = i * 4;
-
-    unsigned char a = block[col];
-    unsigned char b = block[col + 1];
-    unsigned char c = block[col + 2];
-    unsigned char d = block[col + 3];
-
-    unsigned char e = a ^ b ^ c ^ d;
-
-    unsigned char temp_a = a;
-    unsigned char temp_b = b;
-    unsigned char temp_c = c;
-    unsigned char temp_d = d;
-
-    block[col]     ^= e ^ xtime(a ^ b);
-    block[col + 1] ^= e ^ xtime(b ^ c);
-    block[col + 2] ^= e ^ xtime(c ^ d);
-    block[col + 3] ^= e ^ xtime(d ^ temp_a);
-  }
-}
-
-/*
- * Operations used when decrypting a block
- */
-void invert_sub_bytes(unsigned char *block) {
-  // TODO: Implement me!
-  for (int i = 0; i < BLOCK_SIZE; i++) {
-    block[i] = inv_s_box[block[i]];
-  }
-}
-
-void invert_shift_rows(unsigned char *block) {
-  // TODO: Implement me!
-  unsigned char temp;
-
-    // Row 1 (indices: 1,5,9,13) — shift right by 1
-    temp = block[13];
-    block[13] = block[9];
-    block[9]  = block[5];
-    block[5]  = block[1];
-    block[1]  = temp;
-
-    // Row 2 (indices: 2,6,10,14) — shift right by 2
+    // Row 2: shift left by 2
     temp = block[2];
     block[2] = block[10];
     block[10] = temp;
@@ -185,67 +126,84 @@ void invert_shift_rows(unsigned char *block) {
     block[6] = block[14];
     block[14] = temp;
 
-    // Row 3 (indices: 3,7,11,15) — shift right by 3
+    // Row 3: shift left by 3
+    temp = block[15];
+    block[15] = block[11];
+    block[11] = block[7];
+    block[7] = block[3];
+    block[3] = temp;
+}
+
+void mix_columns(unsigned char *block) {
+    for (int i = 0; i < 4; i++) {
+        int idx = i * 4;
+        unsigned char a0 = block[idx];
+        unsigned char a1 = block[idx + 1];
+        unsigned char a2 = block[idx + 2];
+        unsigned char a3 = block[idx + 3];
+
+        block[idx]     = multiply(a0, 2) ^ multiply(a1, 3) ^ a2 ^ a3;
+        block[idx + 1] = a0 ^ multiply(a1, 2) ^ multiply(a2, 3) ^ a3;
+        block[idx + 2] = a0 ^ a1 ^ multiply(a2, 2) ^ multiply(a3, 3);
+        block[idx + 3] = multiply(a0, 3) ^ a1 ^ a2 ^ multiply(a3, 2);
+    }
+}
+
+void invert_sub_bytes(unsigned char *block) {
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] = inv_s_box[block[i]];
+    }
+}
+
+void invert_shift_rows(unsigned char *block) {
+    unsigned char temp;
+
+    // Row 1: shift right by 1
+    temp = block[13];
+    block[13] = block[9];
+    block[9] = block[5];
+    block[5] = block[1];
+    block[1] = temp;
+
+    // Row 2: shift right by 2
+    temp = block[2];
+    block[2] = block[10];
+    block[10] = temp;
+    temp = block[6];
+    block[6] = block[14];
+    block[14] = temp;
+
+    // Row 3: shift right by 3
     temp = block[3];
-    block[3]  = block[7];
-    block[7]  = block[11];
+    block[3] = block[7];
+    block[7] = block[11];
     block[11] = block[15];
     block[15] = temp;
-
 }
 
 void invert_mix_columns(unsigned char *block) {
-  // TODO: Implement me!
+    for (int i = 0; i < 4; i++) {
+        int idx = i * 4;
+        unsigned char a0 = block[idx];
+        unsigned char a1 = block[idx + 1];
+        unsigned char a2 = block[idx + 2];
+        unsigned char a3 = block[idx + 3];
 
-  for (int i = 0; i < 4; i++) {
-    int col = i * 4;
-
-    unsigned char a = block[col];
-    unsigned char b = block[col + 1];
-    unsigned char c = block[col + 2];
-    unsigned char d = block[col + 3];
-
-    unsigned char a2 = xtime(a);
-    unsigned char b2 = xtime(b);
-    unsigned char c2 = xtime(c);
-    unsigned char d2 = xtime(d);
-
-    unsigned char a4 = xtime(a2);
-    unsigned char b4 = xtime(b2);
-    unsigned char c4 = xtime(c2);
-    unsigned char d4 = xtime(d2);
-
-    unsigned char a8 = xtime(a4);
-    unsigned char b8 = xtime(b4);
-    unsigned char c8 = xtime(c4);
-    unsigned char d8 = xtime(d4);
-
-    block[col] = (a8 ^ a4 ^ a2) ^ (b8 ^ b2) ^ (c8 ^ c4) ^ (d4 ^ d2 ^ d);
-    block[col + 1] = (a4 ^ a2 ^ a) ^ (b8 ^ b4 ^ b2) ^ (c8 ^ c2) ^ (d8 ^ d);
-    block[col + 2] = (a8 ^ a2) ^ (b4 ^ b2 ^ b) ^ (c8 ^ c4 ^ c2) ^ (d8 ^ d4);
-    block[col + 3] = (a8 ^ a4 ^ a) ^ (b8 ^ b2) ^ (c4 ^ c2 ^ c) ^ (d8 ^ d4 ^ d2);
-  }
+        block[idx]     = multiply(a0, 0x0e) ^ multiply(a1, 0x0b) ^ multiply(a2, 0x0d) ^ multiply(a3, 0x09);
+        block[idx + 1] = multiply(a0, 0x09) ^ multiply(a1, 0x0e) ^ multiply(a2, 0x0b) ^ multiply(a3, 0x0d);
+        block[idx + 2] = multiply(a0, 0x0d) ^ multiply(a1, 0x09) ^ multiply(a2, 0x0e) ^ multiply(a3, 0x0b);
+        block[idx + 3] = multiply(a0, 0x0b) ^ multiply(a1, 0x0d) ^ multiply(a2, 0x09) ^ multiply(a3, 0x0e);
+    }
 }
 
-/*
- * This operation is shared between encryption and decryption
- */
 void add_round_key(unsigned char *block, unsigned char *round_key) {
-  // TODO: Implement me!
-  for (int i = 0; i < BLOCK_SIZE; i++) {
-    block[i] ^= round_key[i];
-  }
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] ^= round_key[i];
+    }
 }
 
-/*
- * This function should expand the round key. Given an input,
- * which is a single 128-bit key, it should return a 176-byte
- * vector, containing the 11 round keys one after the other
- */
 unsigned char *expand_key(unsigned char *cipher_key) {
-  // TODO: Implement me!
-  
-  unsigned char *expanded = (unsigned char *)malloc(176);
+    unsigned char *expanded = (unsigned char *)malloc(176);
     if (!expanded) return NULL;
 
     for (int i = 0; i < 16; i++) {
@@ -261,19 +219,16 @@ unsigned char *expand_key(unsigned char *cipher_key) {
         }
 
         if (bytes_generated % 16 == 0) {
-            // Rotate
             unsigned char k = temp[0];
             temp[0] = temp[1];
             temp[1] = temp[2];
             temp[2] = temp[3];
             temp[3] = k;
 
-            // Substitute
             for (int i = 0; i < 4; i++) {
                 temp[i] = s_box[temp[i]];
             }
 
-            // Apply Rcon
             temp[0] ^= rcon[bytes_generated / 16];
         }
 
@@ -286,31 +241,18 @@ unsigned char *expand_key(unsigned char *cipher_key) {
     return expanded;
 }
 
-/*
- * The implementations of the functions declared in the
- * header file should go here
- */
 unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
-  // TODO: Implement me!
-  unsigned char *block = (unsigned char *)malloc(BLOCK_SIZE);
+    unsigned char *block = (unsigned char *)malloc(BLOCK_SIZE);
     if (!block) return NULL;
 
-    // Copy plaintext into block
     for (int i = 0; i < BLOCK_SIZE; i++) {
         block[i] = plaintext[i];
     }
 
-    // Expand the key
     unsigned char *round_keys = expand_key(key);
-    if (!round_keys) {
-        free(block);
-        return NULL;
-    }
 
-    // Initial round
     add_round_key(block, round_keys);
 
-    // Rounds 1 to 9
     for (int round = 1; round <= 9; round++) {
         sub_bytes(block);
         shift_rows(block);
@@ -318,50 +260,37 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key) {
         add_round_key(block, round_keys + (round * BLOCK_SIZE));
     }
 
-    // Round 10 (no mix_columns)
     sub_bytes(block);
     shift_rows(block);
     add_round_key(block, round_keys + (10 * BLOCK_SIZE));
 
     free(round_keys);
-
     return block;
 }
 
-unsigned char *aes_decrypt_block(unsigned char *ciphertext,
-                                 unsigned char *key) {
-  // TODO: Implement me!
-  unsigned char *block = (unsigned char *)malloc(BLOCK_SIZE);
-  if (!block) return NULL;
+unsigned char *aes_decrypt_block(unsigned char *ciphertext, unsigned char *key) {
+    unsigned char *block = (unsigned char *)malloc(BLOCK_SIZE);
+    if (!block) return NULL;
 
-  // Copy ciphertext into block
-  for (int i = 0; i < BLOCK_SIZE; i++) {
-      block[i] = ciphertext[i];
-  }
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        block[i] = ciphertext[i];
+    }
 
-  // Expand the key
-  unsigned char *round_keys = expand_key(key);
-  if (!round_keys) {
-      free(block);
-      return NULL;
-  }
+    unsigned char *round_keys = expand_key(key);
 
-  // Initial round (reverse of encryption's final add_round_key)
-  add_round_key(block, round_keys + (10 * BLOCK_SIZE));
-  invert_shift_rows(block);
-  invert_sub_bytes(block);
+    add_round_key(block, round_keys + (10 * BLOCK_SIZE));
 
-  // Rounds 9 to 1 (reverse order)
-  for (int round = 9; round >= 1; round--) {
-      add_round_key(block, round_keys + (round * BLOCK_SIZE));
-      invert_mix_columns(block);
-      invert_shift_rows(block);
-      invert_sub_bytes(block);
-  }
+    for (int round = 9; round >= 1; round--) {
+        invert_shift_rows(block);
+        invert_sub_bytes(block);
+        add_round_key(block, round_keys + (round * BLOCK_SIZE));
+        invert_mix_columns(block);
+    }
 
-  // Final round
-  add_round_key(block, round_keys);
+    invert_shift_rows(block);
+    invert_sub_bytes(block);
+    add_round_key(block, round_keys);
 
-  free(round_keys);
-  return block;
+    free(round_keys);
+    return block;
 }
