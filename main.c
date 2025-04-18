@@ -81,6 +81,24 @@ int main() {
   printf("After sub_bytes:\n");
   print_block(sub_test);
 
+  // test case for mix_test
+  unsigned char mix_test[16] = {
+    0xdb, 0x13, 0x53, 0x45,
+    0xf2, 0x0a, 0x22, 0x5c,
+    0x01, 0x01, 0x01, 0x01,
+    0xc6, 0xc6, 0xc6, 0xc6
+  };
+
+  printf("\nBefore mix_columns:\n");
+  print_block(mix_test);
+
+  mix_columns(mix_test);
+
+  printf("After mix_columns:\n");
+  print_block(mix_test);
+
+
+
   unsigned char plaintext[16] = {1, 2,  3,  4,  5,  6,  7,  8,
                                  9, 10, 11, 12, 13, 14, 15, 16};
   unsigned char key[16] = {50, 20, 46, 86, 67, 9, 70, 27,

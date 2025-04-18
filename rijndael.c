@@ -81,8 +81,33 @@ void shift_rows(unsigned char *block) {
 
 }
 
+static unsigned char xtime(unsigned char x) {
+  return (x << 1) ^ (((x >> 7) & 1) * 0x1b);
+}
+
+
 void mix_columns(unsigned char *block) {
   // TODO: Implement me!
+  for (int i = 0; i < 4; i++) {
+    int col = i * 4;
+
+    unsigned char a = block[col];
+    unsigned char b = block[col + 1];
+    unsigned char c = block[col + 2];
+    unsigned char d = block[col + 3];
+
+    unsigned char e = a ^ b ^ c ^ d;
+
+    unsigned char temp_a = a;
+    unsigned char temp_b = b;
+    unsigned char temp_c = c;
+    unsigned char temp_d = d;
+
+    block[col]     ^= e ^ xtime(a ^ b);
+    block[col + 1] ^= e ^ xtime(b ^ c);
+    block[col + 2] ^= e ^ xtime(c ^ d);
+    block[col + 3] ^= e ^ xtime(d ^ temp_a);
+  }
 }
 
 /*
