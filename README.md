@@ -33,4 +33,5 @@ Makefile → Build instructions
 .github/workflows/ → GitHub Actions workflow for CI/CD
 
 **GitHub Actions**
+
 The project is automatically built and tested using GitHub Actions every time you push code.
