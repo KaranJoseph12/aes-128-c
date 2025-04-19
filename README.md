@@ -1,4 +1,4 @@
-#AES-128 Implementation
+**AES-128 Implementation**
 
 This project is my implementation of AES-128 encryption and decryption in C.
 
@@ -18,7 +18,8 @@ GitHub Actions CI setup to automatically build and run tests
 3. Run the Python test (requires Python 3):
    python3 test_aes.py
 
-#Project Structure
+**Project Structure**
+
 main.c → C main program to manually test encryption/decryption
 
 rijndael.c → Full AES-128 implementation
@@ -31,5 +32,5 @@ Makefile → Build instructions
 
 .github/workflows/ → GitHub Actions workflow for CI/CD
 
-#GitHub Actions
+**GitHub Actions**
 The project is automatically built and tested using GitHub Actions every time you push code.
