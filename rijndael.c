@@ -1,6 +1,25 @@
 /*
- * Karan Joseph D24125555
- * 
+ * AES-128 Encryption and Decryption
+ *
+ * This code is my implementation of AES-128 encryption and decryption. 
+ * It can encrypt a 16-byte block of plaintext and then decrypt it back 
+ * to the original message using a 16-byte (128-bit) key.
+ *
+ * The main parts of the code are:
+ *  - SubBytes and Inverse SubBytes (using the AES S-box)
+ *  - ShiftRows and Inverse ShiftRows
+ *  - MixColumns and Inverse MixColumns
+ *  - AddRoundKey
+ *  - Key Expansion (expand_key function)
+ *  - Full AES block encryption and decryption
+ *
+ * I also wrote a Python script using ctypes to load my C code as a shared library 
+ * and test the encryption and decryption to make sure everything works properly.
+ *
+ * This project also includes some GitHub Actions CI setup to build and run the tests automatically.
+ *
+ * Done By: Karan Joseph
+ * Student Number: D24125555
  */
 
 

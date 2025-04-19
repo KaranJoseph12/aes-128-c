@@ -1,6 +1,7 @@
 import ctypes
 import os
 
+
 # Load the AES shared library
 aes = ctypes.CDLL('./rijndael.so')
 
@@ -99,3 +100,7 @@ print("\033[1;32mTest 3 passed!\033[0m")
 
 
 print("\n\033[1;32mAll tests passed successfully!\033[0m")
+
+#Code used for test cases
+# gcc -fPIC -shared -o rijndael.so rijndael.c
+# python3 test_aes.py 
